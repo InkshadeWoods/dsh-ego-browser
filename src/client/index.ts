@@ -956,7 +956,6 @@ declare function require(id: string): any
 				yield ctx.slots.register({
 					name: 'settings.plugin.item',
 					key: SETTINGS_NS,
-					id: 'ego-browser',
 					order: 60,
 					locale: SETTINGS_NS,
 					inject: function () { return { controller: controller, useSnapshot: useSnapshot } },
