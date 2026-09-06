@@ -14,7 +14,7 @@
  */
 import { fileURLToPath } from 'node:url'
 import { request, type ClientRequest, type IncomingMessage, type ServerResponse } from 'node:http'
-import type { EgoContext, ResolvedConfig, WebServerLike } from './types.ts'
+import type { EgoContext, RegisterRouteOptions, ResolvedConfig, WebServerLike } from './types.ts'
 import type { SettingsBridge } from './settings.ts'
 import type { FfmpegInstallationManager, FfmpegStatus } from './ffmpeg-installation.ts'
 
@@ -453,6 +453,33 @@ export function initCastServer(
   if (!server || typeof server.register !== 'function') {
     return
   }
+
+  // ── trust fence for /api/ego/* ────────────────────────────────────────────
+  // Exact-path routes match BEFORE the host's `/api` prefix trust-fence route,
+  // so every handler below would otherwise answer unauthenticated requests.
+  // The host issues a `dsh-auth-<processKey>` cookie that is HttpOnly AND
+  // SameSite=Strict: a cross-site page (CSRF driver-by) never carries it, so
+  // requiring its mere presence closes the remote surface. A local process can
+  // still forge the header, but that is the same threat tier as the host's own
+  // token fence (a local process can read the process token too).
+  const isTrustedRequest = (req: IncomingMessage): boolean =>
+    /(?:^|;\s*)dsh-auth-[^=]+=/.test(String(req.headers.cookie ?? ''))
+  const guardHandler = (handler: NonNullable<RegisterRouteOptions['handler']>) =>
+    async (req: unknown, resRaw: unknown) => {
+      const res = resRaw as ServerResponse
+      if (!isTrustedRequest(req as IncomingMessage)) {
+        res.statusCode = 401
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end('{"ok":false,"error":"unauthorized"}')
+        return
+      }
+      return handler(req, res)
+    }
+  const rawRegister = server.register.bind(server)
+  ;(server as WebServerLike).register = (opts) => rawRegister({
+    ...opts,
+    handler: opts.handler ? guardHandler(opts.handler) : opts.handler,
+  })
 
   // Hot-push config changes to a running worker. The settings bridge fires
   // onChange whenever the user saves a new castFpsCap / screencastQuality /
