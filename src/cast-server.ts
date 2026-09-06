@@ -449,8 +449,8 @@ export function initCastServer(
   // uses. It is NOT a required inject (TUI / headless hosts have none), so we
   // resolve it opportunistically via ctx.get('webServer'); if absent here there
   // is nothing to register, so exit cleanly.
-  const server = (ctx as EgoContext).get?.('webServer') as WebServerLike | undefined
-  if (!server || typeof server.register !== 'function') {
+  const rawServer = (ctx as EgoContext).get?.('webServer') as WebServerLike | undefined
+  if (!rawServer || typeof rawServer.register !== 'function') {
     return
   }
 
@@ -475,10 +475,14 @@ export function initCastServer(
       }
       return handler(req, res)
     }
-  const rawRegister = server.register.bind(server)
-  ;(server as WebServerLike).register = (opts) => rawRegister({
-    ...opts,
-    handler: opts.handler ? guardHandler(opts.handler) : opts.handler,
+  // Scope the guard to THIS plugin's registrations only: never patch the host
+  // webServer singleton in place — other plugins' routes registered through the
+  // same service instance must keep their own (unguarded) semantics.
+  const server = Object.assign(Object.create(Object.getPrototypeOf(rawServer)), rawServer, {
+    register: (opts: RegisterRouteOptions) => rawServer.register({
+      ...opts,
+      handler: opts.handler ? guardHandler(opts.handler) : opts.handler,
+    }),
   })
 
   // Hot-push config changes to a running worker. The settings bridge fires
