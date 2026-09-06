@@ -478,8 +478,9 @@ export function initCastServer(
   // Scope the guard to THIS plugin's registrations only: never patch the host
   // webServer singleton in place — other plugins' routes registered through the
   // same service instance must keep their own (unguarded) semantics.
+  const rawRegister = rawServer.register.bind(rawServer) as (opts: RegisterRouteOptions) => () => void
   const server = Object.assign(Object.create(Object.getPrototypeOf(rawServer)), rawServer, {
-    register: (opts: RegisterRouteOptions) => rawServer.register({
+    register: (opts: RegisterRouteOptions) => rawRegister({
       ...opts,
       handler: opts.handler ? guardHandler(opts.handler) : opts.handler,
     }),
