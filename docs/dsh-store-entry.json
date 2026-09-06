@@ -7,7 +7,7 @@
   "defaultBranch": "master",
   "manifestPath": "package.json",
   "updatePolicy": "user-reviewed",
-  "commit": "PLACEHOLDER-40SHA",
+  "commit": "e409e65a2ad522a823a13b2c6dbc88ae9e9dbf20",
   "version": "0.8.3",
   "categories": [
     "development",
@@ -15,7 +15,7 @@
   ],
   "featured": false,
   "source": {
-    "updatedAt": "2026-09-06T14:16:19+08:00",
+    "updatedAt": "2026-09-06T16:46:22.573Z",
     "observedAt": "2026-09-06T16:30:00+08:00",
     "provenance": "github-commit"
   },
