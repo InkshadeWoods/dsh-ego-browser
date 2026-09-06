@@ -345,7 +345,11 @@ async function main() {
   // usable X display is present (e.g. an Xvfb), run headed so the compositor
   // produces full-rate screencast frames for the watch panel — headless would
   // fall back to swiftshader (~1 fps). --headless still forces headless per run.
-  const hasDisplay = (process.env.DISPLAY || "").trim() !== "";
+  // Windows always "has a display" (the desktop session; see ensureXDisplay's
+  // win32 branch) — without this the post-#22 default flipped headed cold
+  // starts into an Xvfb lookup that can never succeed there.
+  const hasDisplay =
+    process.platform === "win32" || (process.env.DISPLAY || "").trim() !== "";
   const envHeadless = hasDisplay
     ? false
     : !["", "0", "false", "no"].includes(

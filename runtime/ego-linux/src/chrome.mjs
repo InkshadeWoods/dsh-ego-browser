@@ -577,6 +577,13 @@ async function spawnXvfb(num) {
  *   displays are ours to terminate.
  */
 export async function ensureXDisplay({ ignoreEnvDisplay = false } = {}) {
+  // Windows has a desktop session and no X server: Chrome opens a real window
+  // directly (the v0.4.0 Windows adaptation). Returning a pseudo display keeps
+  // the headed path alive without ever touching Xvfb (issue: post-merge cold
+  // start failed with "no X display ... no Xvfb binary on PATH").
+  if (process.platform === "win32") {
+    return { display: process.env.DISPLAY || "win32-desktop", pid: null, launched: false };
+  }
   if (!ignoreEnvDisplay && (await displayUsable(process.env.DISPLAY))) {
     return { display: process.env.DISPLAY, pid: null, launched: false };
   }
