@@ -939,8 +939,11 @@ function registerActionTools(ctx: EgoContext, cfg: EgoRuntimeConfig, reg: (tool:
         name: {
           type: 'string',
           required: true,
-          description:
-            "Task-space name. In persistent mode, ALWAYS specify 'default'. Reuse this single space for all browsing tasks.",
+          get description() {
+            return cfg.isolateSpaces
+              ? 'Task-space name or numeric id.'
+              : "Task-space name. In persistent mode, ALWAYS specify 'default'. Reuse this single space for all browsing tasks."
+          },
         },
       },
       buildScript: (args) =>
